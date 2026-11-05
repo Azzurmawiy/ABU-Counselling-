@@ -9,6 +9,7 @@ class StudentRegistration(models.Model):
     last_name = models.CharField(max_length=50)
     matric_number = models.CharField(max_length=30, unique=True)
     phone_number = models.CharField(max_length=14, unique=True)
+    has_consented = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=[("active", "Active")], default="active")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

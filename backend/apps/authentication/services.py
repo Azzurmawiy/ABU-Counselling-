@@ -27,7 +27,7 @@ from apps.common.exceptions import (
     RateLimitedError,
     SetupTokenInvalidError,
 )
-from apps.common.phone import mask_phone, phone_hash
+from apps.common.phone import mask_phone, phone_hash, normalize_ng_phone, InvalidPhoneNumber
 from apps.registrations.models import StudentRegistration
 
 logger = logging.getLogger("chdc")
@@ -43,6 +43,12 @@ def hash_setup_token(token):
 
 
 def request_otp(phone: str) -> dict:
+    # 1. Normalize phone number to match database formatting consistently
+    try:
+        phone = normalize_ng_phone(phone)
+    except InvalidPhoneNumber:
+        raise serializers.ValidationError({"phone_number": ["Invalid phone number format."]})
+
     phone_key = phone_hash(phone)
     now = time.time()
     cooldown_key = f"otp:cooldown:{phone_key}"
@@ -64,14 +70,12 @@ def request_otp(phone: str) -> dict:
 
     registration = StudentRegistration.objects.filter(phone_number=phone).first()
     eligible = registration is not None and not User.objects.filter(registration=registration).exists()
+    
     if not eligible:
         logger.info("otp request not eligible phone=%s", mask_phone(phone))
-        return {
-            "request_id": str(uuid4()),
-            "message": GENERIC_OTP_MESSAGE,
-            "expires_in": settings.OTP_TTL_SECONDS,
-            "resend_after": settings.OTP_RESEND_COOLDOWN_SECONDS,
-        }
+        raise serializers.ValidationError({
+            "phone_number": ["This phone number is not pre-registered on the web app, or an account has already been set up."]
+        })
 
     code = f"{secrets.randbelow(10**6):06d}"
     with transaction.atomic():

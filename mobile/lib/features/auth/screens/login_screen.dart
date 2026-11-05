@@ -18,11 +18,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _usernameError;
-  String? _passwordError;
-  String? _error;
+  
   bool _passwordVisible = false;
   bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -31,25 +30,30 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _handleLogin() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+
+    if (username.isEmpty || password.isEmpty) {
+      setState(() {
+        _error = 'Please enter both username/email and password.';
+      });
+      return;
+    }
+
     setState(() {
-      _usernameError = _usernameController.text.trim().isEmpty
-          ? 'This field is required.'
-          : null;
-      _passwordError = _passwordController.text.isEmpty
-          ? 'This field is required.'
-          : null;
+      _loading = true;
       _error = null;
     });
-    if (_usernameError != null || _passwordError != null) return;
 
-    setState(() => _loading = true);
     try {
       final session = await context.read<ApiClient>().login(
-            username: _usernameController.text.trim(),
-            password: _passwordController.text,
+            username: username.toLowerCase(),
+            password: password,
           );
+
       if (!mounted) return;
+
       context.read<AuthController>().setSession(session);
       Navigator.pushNamedAndRemoveUntil(
         context,
@@ -58,91 +62,118 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } on ApiException catch (exception) {
       if (!mounted) return;
-      if (exception.code == 'invalid_credentials') {
-        _passwordController.clear();
-        setState(() => _error = exception.message);
-      } else if (exception.code == 'rate_limited') {
-        setState(
-          () => _error =
-              'Too many attempts. Try again in ${exception.retryAfter ?? 0} seconds.',
-        );
-      } else if (exception.code == 'validation_error') {
-        setState(() {
-          _usernameError = exception.fieldError('username');
-          _passwordError = exception.fieldError('password');
-          _error = exception.message;
-        });
-      } else {
-        setState(() => _error = exception.message);
-      }
+      setState(() {
+        _error = exception.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'An unexpected error occurred. Please try again.';
+      });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Log in')),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _usernameController,
-                  keyboardType: TextInputType.text,
-                  autofillHints: const [AutofillHints.username],
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    errorText: _usernameError,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: !_passwordVisible,
-                  autofillHints: const [AutofillHints.password],
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    errorText: _passwordError,
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      tooltip:
-                          _passwordVisible ? 'Hide password' : 'Show password',
-                      onPressed: () => setState(
-                        () => _passwordVisible = !_passwordVisible,
-                      ),
-                      icon: Icon(
-                        _passwordVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sign In'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              Text(
+                'Welcome Back',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sign in to access your confidential case dashboard.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+              const SizedBox(height: 32),
+              
+              // Username / Identity Field
+              TextField(
+                controller: _usernameController,
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.username],
+                decoration: const InputDecoration(
+                  labelText: 'Username or Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Password Field
+              TextField(
+                controller: _passwordController,
+                obscureText: !_passwordVisible,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _handleLogin(),
+                autofillHints: const [AutofillHints.password],
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    tooltip: _passwordVisible ? 'Hide password' : 'Show password',
+                    icon: Icon(
+                      _passwordVisible ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() => _passwordVisible = !_passwordVisible);
+                    },
                   ),
                 ),
-                const SizedBox(height: 16),
-                if (_error != null) ...[
-                  ErrorBanner(message: _error!),
-                  const SizedBox(height: 16),
-                ],
-                PrimaryButton(
-                  label: 'Log in',
-                  isLoading: _loading,
-                  onPressed: _submit,
-                ),
-                TextButton(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, Routes.phone),
-                  child: const Text('First time here? Set up my account'),
-                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Error Banner
+              if (_error != null) ...[
+                ErrorBanner(message: _error!),
+                const SizedBox(height: 20),
               ],
-            ),
+
+              // Sign In Button
+              PrimaryButton(
+                label: 'Sign In',
+                isLoading: _loading,
+                onPressed: _handleLogin,
+              ),
+              const SizedBox(height: 16),
+
+              // Account Setup Redirect Link
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account?"),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, Routes.phone);
+                    },
+                    child: const Text('Get Started'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }

@@ -26,9 +26,12 @@
     <true/>
     <key>NSAppTransportSecurity</key>
     <dict>
-        <key>NSAllowsLocalNetworking</key>
+        <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
+    <!-- Added: Required for Face ID / Biometric Authentication -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>Biometric authentication is required to access confidential student case details securely.</string>
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
     <key>UIMainStoryboardFile</key>

@@ -11,6 +11,14 @@ class RegistrationCreateSerializer(serializers.Serializer):
     last_name = NameField()
     matric_number = MatricField()
     phone_number = NigerianPhoneField()
+    has_consented = serializers.BooleanField(required=True)
+
+    def validate_has_consented(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                "You must accept the NDPR consent policy to proceed."
+            )
+        return value
 
     def create(self, validated_data):
         matric_number = validated_data["matric_number"]
