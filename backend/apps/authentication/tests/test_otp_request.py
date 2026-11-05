@@ -23,6 +23,18 @@ def test_request_otp_for_unregistered_number_returns_generic_response(api_client
     assert response.data["message"] == "If this number is registered and not yet set up, a verification code has been sent by SMS."
     assert sent_codes == []
 
+    verification = api_client.post(
+        "/api/v1/auth/otp/verify/",
+        {
+            "phone_number": "08031234568",
+            "request_id": response.data["request_id"],
+            "code": "123456",
+        },
+        format="json",
+    )
+    assert verification.status_code == 400
+    assert verification.data["error"]["code"] == "invalid_otp"
+
 
 @pytest.mark.django_db
 def test_request_otp_invalid_phone_returns_validation_error(api_client):

@@ -72,6 +72,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             setupToken: widget.args.setupToken,
             username: _usernameController.text.trim().toLowerCase(),
             password: _passwordController.text,
+            hasConsented: _hasConsentedToNDPR,
           );
       if (!mounted) return;
       context.read<AuthController>().setSession(session);

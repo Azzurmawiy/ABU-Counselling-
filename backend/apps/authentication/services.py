@@ -73,9 +73,12 @@ def request_otp(phone: str) -> dict:
     
     if not eligible:
         logger.info("otp request not eligible phone=%s", mask_phone(phone))
-        raise serializers.ValidationError({
-            "phone_number": ["This phone number is not pre-registered on the web app, or an account has already been set up."]
-        })
+        return {
+            "request_id": str(uuid4()),
+            "message": GENERIC_OTP_MESSAGE,
+            "expires_in": settings.OTP_TTL_SECONDS,
+            "resend_after": settings.OTP_RESEND_COOLDOWN_SECONDS,
+        }
 
     code = f"{secrets.randbelow(10**6):06d}"
     with transaction.atomic():

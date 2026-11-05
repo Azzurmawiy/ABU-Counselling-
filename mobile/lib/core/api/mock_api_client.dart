@@ -80,13 +80,23 @@ class MockApiClient implements ApiClient {
     required String setupToken,
     required String username,
     required String password,
+    required bool hasConsented,
   }) async {
     await _delay();
+    if (!hasConsented) {
+      throw const ApiException(
+        statusCode: 400,
+        code: 'validation_error',
+        message:
+            'You must accept the NDPR consent policy to create an account.',
+      );
+    }
     if (setupToken != 'mock-setup-token') {
       throw const ApiException(
         statusCode: 400,
         code: 'setup_token_invalid',
-        message: 'Your verification has expired. Please verify your phone number again.',
+        message:
+            'Your verification has expired. Please verify your phone number again.',
       );
     }
     if (username.toLowerCase() == 'taken_user') {

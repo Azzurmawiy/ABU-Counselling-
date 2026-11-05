@@ -66,6 +66,7 @@ void main() {
         setupToken: 'wrong',
         username: 'amina_b',
         password: 'S3cure!pass',
+        hasConsented: true,
       ),
       throwsA(isA<ApiException>().having(
         (error) => error.code,
@@ -78,6 +79,7 @@ void main() {
         setupToken: 'mock-setup-token',
         username: 'taken_user',
         password: 'S3cure!pass',
+        hasConsented: true,
       ),
       throwsA(isA<ApiException>().having(
         (error) => error.fieldError('username'),
@@ -93,13 +95,26 @@ void main() {
       setupToken: 'mock-setup-token',
       username: 'amina_b',
       password: 'S3cure!pass',
+      hasConsented: true,
     );
     expect(session.user.username, 'amina_b');
     expect(await storage.readAccess(), 'mock-access-token');
     expect(await storage.readRefresh(), 'mock-refresh-token');
     expect((await api.me()).phoneNumber, '+2348031234567');
     expect(await api.hasSession(), isTrue);
-
+    await expectLater(
+      api.setupAccount(
+        setupToken: 'mock-setup-token',
+        username: 'another_user',
+        password: 'S3cure!pass',
+        hasConsented: false,
+      ),
+      throwsA(isA<ApiException>().having(
+        (error) => error.code,
+        'code',
+        'validation_error',
+      )),
+    );
     await api.logout();
     expect(await storage.readAccess(), isNull);
     expect(await api.hasSession(), isFalse);

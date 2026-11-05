@@ -13,6 +13,7 @@ def test_registration_api_creates_record():
         "last_name": "Bello",
         "matric_number": "CHDC/0001",
         "phone_number": "08031234567",
+        "has_consented": True,
     }
 
     response = client.post(reverse("registration-create"), payload, format="json")
@@ -38,6 +39,7 @@ def test_registration_api_rejects_duplicate_matric_or_phone():
         "last_name": "Jane",
         "matric_number": "CHDC/0001",
         "phone_number": "08031234568",
+        "has_consented": True,
     }
 
     response = client.post(reverse("registration-create"), payload, format="json")
@@ -61,3 +63,21 @@ def test_registration_api_validates_phone_and_names():
 
     assert response.status_code == 400
     assert response.data["error"]["code"] == "validation_error"
+
+
+@pytest.mark.django_db
+def test_registration_api_requires_consent():
+    client = APIClient()
+    payload = {
+        "first_name": "Amina",
+        "last_name": "Bello",
+        "matric_number": "CHDC/0001",
+        "phone_number": "08031234567",
+        "has_consented": False,
+    }
+
+    response = client.post(reverse("registration-create"), payload, format="json")
+
+    assert response.status_code == 400
+    assert response.data["error"]["code"] == "validation_error"
+    assert not StudentRegistration.objects.exists()

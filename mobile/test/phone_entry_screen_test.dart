@@ -35,16 +35,16 @@ void main() {
 
     // Test invalid phone number validation
     await tester.enterText(find.byType(TextField), '123');
-    await tester.tap(find.text('Send code'));
+    await tester.tap(find.text('Continue'));
     await tester.pump();
     expect(
-      find.text('Enter a valid Nigerian mobile number, e.g. 08031234567.'),
+      find.text('Enter a valid phone number for Nigeria.'),
       findsOneWidget,
     );
 
     // Test valid phone number submission
     await tester.enterText(find.byType(TextField), '0803 123 4567');
-    await tester.tap(find.text('Send code'));
+    await tester.tap(find.text('Continue'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 650));
     await tester.pumpAndSettle();

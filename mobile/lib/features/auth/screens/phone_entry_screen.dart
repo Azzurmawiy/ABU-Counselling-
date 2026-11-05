@@ -11,7 +11,7 @@ class CountryCode {
 
   final String name;
   final String dialCode; // e.g. '+234'
-  final String isoCode;  // e.g. 'NG'
+  final String isoCode; // e.g. 'NG'
 }
 
 // Add or remove countries as needed.
@@ -142,7 +142,7 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
                 SizedBox(
                   width: 140,
                   child: DropdownButtonFormField<CountryCode>(
-                    value: _country,
+                    initialValue: _country,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Country',

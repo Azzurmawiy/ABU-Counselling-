@@ -64,6 +64,21 @@ The APK is written to
 `build/app/outputs/flutter-apk/app-release.apk`. The URL is compiled into the
 app, so rebuild the APK if the backend URL changes.
 
+## Publish a signed Android release
+
+Create and push a version tag matching `mobile/pubspec.yaml` (for example,
+`v1.0.1`). The Android Release workflow builds a signed APK and AAB and attaches
+both to a GitHub Release. Configure these GitHub Actions settings first:
+
+- Repository secret `ANDROID_KEYSTORE_BASE64`: base64-encoded upload keystore
+- Repository secrets `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and
+  `ANDROID_KEY_PASSWORD`
+- Repository variables `API_BASE_URL` and `WEB_REGISTRATION_URL`, both HTTPS
+  URLs for the production services
+
+The Android release build requires `mobile/android/key.properties`; it does not
+fall back to the debug signing key. Keep the keystore and passwords private.
+
 ## Checks
 
 ```sh

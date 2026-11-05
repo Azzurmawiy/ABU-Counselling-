@@ -47,8 +47,8 @@ class HttpApiClient implements ApiClient {
 
     try {
       final streamed = await _client.send(request).timeout(
-        const Duration(seconds: 15),
-      );
+            const Duration(seconds: 15),
+          );
       final response = await http.Response.fromStream(streamed).timeout(
         const Duration(seconds: 15),
       );
@@ -107,6 +107,7 @@ class HttpApiClient implements ApiClient {
     required String setupToken,
     required String username,
     required String password,
+    required bool hasConsented,
   }) async {
     final session = AuthSession.fromJson(await _request(
       'POST',
@@ -115,6 +116,7 @@ class HttpApiClient implements ApiClient {
         'setup_token': setupToken,
         'username': username.trim().toLowerCase(),
         'password': password,
+        'has_consented': hasConsented,
       },
     ));
     await _storage.save(access: session.access, refresh: session.refresh);

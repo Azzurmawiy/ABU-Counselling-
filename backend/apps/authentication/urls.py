@@ -1,6 +1,14 @@
 from django.urls import path
 
-from apps.authentication.views import LoginView, LogoutView, MeView, OtpRequestView, OtpVerifyView, RefreshView, SetupAccountView
+from apps.authentication.views import (
+    LoginView,
+    LogoutView,
+    MeView,
+    OtpRequestView,
+    OtpVerifyView,
+    RefreshView,
+    SetupAccountView,
+)
 
 urlpatterns = [
     path("otp/request/", OtpRequestView.as_view(), name="otp-request"),
