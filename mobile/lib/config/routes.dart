@@ -7,6 +7,7 @@ import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/phone_entry_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/cases/screens/case_details_screen.dart';// Add import for case detail screen
+import '../core/secuirity/local_auth_gate.dart';
 import '../features/navigation/main_tab_screen.dart';
 import '../features/cases/screens/create_case_screen.dart'; // Adjust path if needed
 
@@ -50,10 +51,18 @@ class Routes {
             : <String, dynamic>{};
             
         return MaterialPageRoute(
-          builder: (_) => CaseDetailScreen(caseData: caseData),
+          builder: (_) => LocalAuthenticationGate(
+            localizedReason: 'Authenticate to view this counselling case',
+            child: CaseDetailScreen(caseData: caseData),
+          ),
         );
       case chat:
-        return MaterialPageRoute(builder: (_) => DummyChatScreen());
+        return MaterialPageRoute(
+          builder: (_) => LocalAuthenticationGate(
+            localizedReason: 'Authenticate to open your counselling chat',
+            child: DummyChatScreen(),
+          ),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -70,12 +79,14 @@ class OtpArgs {
     required this.requestId,
     required this.resendAfter,
     required this.message,
+    this.isRegistrationCode = false,
   });
 
   final String phoneNumber;
   final String requestId;
   final int resendAfter;
   final String message;
+  final bool isRegistrationCode;
 }
 
 class SetupArgs {

@@ -16,6 +16,21 @@ class OtpVerifySerializer(serializers.Serializer):
     code = serializers.RegexField(r"^\d{6}$", error_messages={"invalid": "Enter the 6-digit code."})
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    phone_number = NigerianPhoneField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    phone_number = NigerianPhoneField()
+    request_id = serializers.UUIDField()
+    otp_code = serializers.RegexField(
+        r"^\d{6}$", error_messages={"invalid": "Enter the 6-digit code."}
+    )
+    new_password = serializers.CharField(
+        max_length=128, trim_whitespace=False, write_only=True
+    )
+
+
 class SetupAccountSerializer(serializers.Serializer):
     setup_token = serializers.CharField(max_length=128)
     username = UsernameField()

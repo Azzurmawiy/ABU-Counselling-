@@ -118,11 +118,15 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
           requestId: result.requestId,
           resendAfter: result.resendAfter,
           message: result.message,
+          isRegistrationCode: result.isRegistrationCode,
         ),
       );
     } on ApiException catch (exception) {
       if (!mounted) return;
-      setState(() => _phoneError = exception.message);
+      setState(() {
+        _phoneError =
+            exception.fieldError('phone_number') ?? exception.message;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -179,6 +183,7 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
                       labelText: 'Phone Number',
                       hintText: 'e.g. 8031234567',
                       errorText: _phoneError,
+                      errorMaxLines: 3,
                       border: const OutlineInputBorder(),
                     ),
                   ),

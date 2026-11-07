@@ -101,6 +101,7 @@ Request:
 {"error": {"code": "duplicate", "message": "Some details are already registered.", "fields": {"matric_number": ["This matric number is already registered."], "phone_number": ["This phone number is already registered."]}}}
 ```
 429 `rate_limited`.
+Registration rows start with status `PENDING`. A phone can submit the web registration again while its row is `PENDING` or `EXPIRED`; the existing row is refreshed and previous verification attempts are invalidated. A `COMPLETED` registration is rejected with 409. A web signup code, when returned in development, expires after 15 minutes. Successful account setup changes the status to `COMPLETED`.
 
 ### 3.3 POST /api/v1/auth/otp/request/ — public (mobile)
 Request: `{"phone_number": "08031234567"}`
@@ -108,7 +109,7 @@ Request: `{"phone_number": "08031234567"}`
 ```json
 {"request_id": "6f1c2a7e-3b9d-4c51-a0e2-9f7d1e2b3c4d", "message": "If this number is registered and not yet set up, a verification code has been sent by SMS.", "expires_in": 300, "resend_after": 60}
 ```
-400 `validation_error` (bad phone format only). 429 `rate_limited` with `retry_after` — applies to every number equally (60 s cooldown per number; max 5 requests per number per hour; per-IP throttle).
+400 `validation_error` (bad phone format only). 429 `rate_limited` with `retry_after` — applies to every number equally (60 s cooldown per number; max 10 requests per number per hour; per-IP throttle).
 Requesting a new code invalidates all earlier unused codes for that registration.
 
 ### 3.4 POST /api/v1/auth/otp/verify/ — public (mobile)
@@ -146,7 +147,17 @@ Request: `{"refresh": "<jwt>"}`
 Request: `{"refresh": "<jwt>"}`
 204 No Content (always, even if the refresh token was already invalid — idempotent). 401 only if the access token is missing/invalid; clients treat that as logged out too.
 
-### 3.10 Developer endpoints (backend only, not used by apps)
+### 3.10 POST /api/v1/auth/forgot-password/ — public
+Request: `{"phone_number": "08031234567"}`
+200 OK: `{"request_id": "<uuid>", "message": "If an account exists for this phone number, a password reset code has been sent by SMS.", "expires_in": 900}`. The response has the same shape for registered and unknown numbers; only active accounts receive an SMS.
+400 `validation_error` (bad phone format), 429 `rate_limited`.
+
+### 3.11 POST /api/v1/auth/reset-password/ — public
+Request: `{"phone_number": "08031234567", "request_id": "<uuid>", "otp_code": "123456", "new_password": "S3cure!pass"}`
+200 OK: `{"message": "Password updated successfully."}`. The code is single-use, expires after 15 minutes, and allows at most 5 attempts. Passwords are checked with the same Django validators as account setup; outstanding refresh tokens are revoked.
+400 `invalid_otp`, `otp_expired`, `otp_attempts_exceeded`, or `validation_error`; 429 `rate_limited`.
+
+### 3.12 Developer endpoints (backend only, not used by apps)
 `GET /api/v1/schema/` (OpenAPI YAML) and `GET /api/v1/docs/` (Swagger UI). `/admin/` Django admin.
 
 ## 4. Shared mock scenarios (web and mobile mock modes MUST implement exactly these)
@@ -163,7 +174,7 @@ Mock latency: 600 ms on every call. Any input not listed → success path.
 | otp/verify | `code == "123456"` | 200, `setup_token: "mock-setup-token"`, `expires_in: 600` |
 | otp/verify | `code == "000000"` | 400 otp_expired |
 | otp/verify | `code == "999999"` | 400 otp_attempts_exceeded |
-| otp/verify | any other code | 400 invalid_otp, `attempts_remaining: 4` |
+| otp/verify | any other code | 400 invalid_otp, `attempts_remaining: 9` |
 | setup-account | `username == "taken_user"` | 409 duplicate on `username` |
 | setup-account | `setup_token != "mock-setup-token"` | 400 setup_token_invalid |
 | setup-account | otherwise valid | 201, `access: "mock-access-token"`, `refresh: "mock-refresh-token"`, user below |

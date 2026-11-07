@@ -20,19 +20,28 @@ flutter pub get
 flutter run --dart-define=USE_MOCK=true
 ```
 
-Mock mode is enabled by default. It persists mock session tokens in secure
-storage so restarting the app exercises the normal session restore flow.
+Mock mode persists mock session tokens in secure storage so restarting the app
+exercises the normal session restore flow. The app uses the live backend unless
+mock mode is explicitly enabled.
 
 | Flow | Mock input |
 |---|---|
-| Send OTP | Any valid Nigerian mobile number |
+| Request OTP | Any valid phone number receives the generic response |
+| Verify mock OTP | `+2348031234567` with code `123456` (registered mock student) |
 | Rate limit | `08000000429` |
 | Expired OTP | `000000` |
 | Too many OTP attempts | `999999` |
-| Successful OTP | `123456` |
 | Incorrect OTP | Any other six-digit code |
 | Duplicate username | `taken_user` |
 | Successful login | `student1` / `Password123!` |
+
+For local mock mode, `123456` only verifies the mock student
+`+2348031234567`. The development backend accepts `123456` only for web
+registrations explicitly listed in `OTP_DEV_TEST_PHONES`, with
+`DJANGO_DEBUG=true` and `OTP_PROVIDER=console`. Other registered numbers use
+their generated development code; unregistered numbers are rejected before
+the OTP screen. List allowlisted numbers in E.164 format (for example,
+`+2348031234567`). Production backends continue generating random OTPs.
 
 ## Run against the live backend
 
@@ -50,9 +59,11 @@ Android phone on the same Wi-Fi as the backend:
 flutter run --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=http://<backend-LAN-IP>:8000
 ```
 
-The backend must allow the device IP in `DJANGO_ALLOWED_HOSTS`. For the
-development OTP code, run `scripts\otp.ps1` from the repository root (it prints
-each `[DEV OTP]` line from the API logs as phone and code).
+The backend must allow the device IP in `DJANGO_ALLOWED_HOSTS`. When the
+backend is running with `DJANGO_DEBUG=true` and `OTP_PROVIDER=console`, enter
+`123456` for a phone number registered on the web. Unregistered numbers cannot
+verify, even though the OTP request response is generic. Production backends
+continue generating random OTPs.
 
 ## Build a demo APK
 

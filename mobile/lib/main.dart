@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
 import 'core/api/http_api_client.dart';
 import 'core/api/mock_api_client.dart';
-import 'core/env.dart';
+import 'config/env.dart';
 import 'core/storage/token_storage.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/cases/case_controller.dart';

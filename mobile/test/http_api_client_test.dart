@@ -42,6 +42,7 @@ void main() {
               'message': 'sent',
               'expires_in': 300,
               'resend_after': 60,
+              'is_registration_code': true,
             });
           case '/api/v1/auth/otp/verify/':
             return jsonResponse(
@@ -64,7 +65,8 @@ void main() {
       }),
     );
 
-    await client.requestOtp('+2348031234567');
+    final otpRequest = await client.requestOtp('+2348031234567');
+    expect(otpRequest.isRegistrationCode, isTrue);
     await client.verifyOtp(
       phoneNumber: '+2348031234567',
       requestId: 'request-id',

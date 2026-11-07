@@ -23,6 +23,7 @@ class _OtpScreenState extends State<OtpScreen> {
   bool _resending = false;
   late String _phone;
   late String _requestId;
+  late bool _isRegistrationCode;
   int _resendCountdown = 0;
   Timer? _resendTimer;
 
@@ -32,12 +33,14 @@ class _OtpScreenState extends State<OtpScreen> {
     // Extract values directly from the strongly-typed OtpArgs object
     _phone = widget.args.phoneNumber;
     _requestId = widget.args.requestId;
+    _isRegistrationCode = widget.args.isRegistrationCode;
     _startResendCountdown(widget.args.resendAfter);
   }
 
   void _startResendCountdown(int seconds) {
     _resendTimer?.cancel();
     setState(() => _resendCountdown = seconds);
+    if (seconds <= 0) return;
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -118,7 +121,11 @@ class _OtpScreenState extends State<OtpScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text('Enter the code sent to $_phone'),
+            Text(
+              _isRegistrationCode
+                  ? 'Enter the code shown after web registration for $_phone.'
+                  : 'Enter the code sent to $_phone',
+            ),
             const SizedBox(height: 20),
             TextField(
               controller: _codeController,
@@ -131,6 +138,7 @@ class _OtpScreenState extends State<OtpScreen> {
               decoration: InputDecoration(
                 labelText: 'Verification Code',
                 errorText: _codeError,
+                errorMaxLines: 3,
                 counterText: '', // Hides the built-in character count indicator for a cleaner look
               ),
             ),
@@ -145,18 +153,19 @@ class _OtpScreenState extends State<OtpScreen> {
                     )
                   : const Text('Verify'),
             ),
-            TextButton(
-              onPressed: (_resendCountdown > 0 || _resending)
-                  ? null
-                  : _resendCode,
-              child: Text(
-                _resending
-                    ? 'Sending...'
-                    : _resendCountdown > 0
-                        ? 'Resend code in ${_resendCountdown}s'
-                        : 'Resend code',
+            if (!_isRegistrationCode)
+              TextButton(
+                onPressed: (_resendCountdown > 0 || _resending)
+                    ? null
+                    : _resendCode,
+                child: Text(
+                  _resending
+                      ? 'Sending...'
+                      : _resendCountdown > 0
+                          ? 'Resend code in ${_resendCountdown}s'
+                          : 'Resend code',
+                ),
               ),
-            ),
           ],
         ),
       ),

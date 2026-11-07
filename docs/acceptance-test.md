@@ -31,19 +31,24 @@ Tester: ____________  Date: ____________  Backend URL: ____________  OTP provide
 - [ ] D3. Kill and reopen the app → goes straight to Home.
 - [ ] D4. In /admin uncheck `is_active` for amina_b → login fails with the same message. Re-enable.
 
-## E. Data and hygiene
-- [ ] E1. /admin: `student_registrations` rows, `user_accounts` linked one-to-one, `phone_verifications` show no plaintext code.
-- [ ] E2. `git ls-files | grep -E "(^|/)\.env$"` → empty. No real student data in the repo.
-- [ ] E3. Fresh clone on another laptop following README → `/api/v1/health/` OK, web and mobile run.
-- [ ] E4. CI green on main for backend, web and mobile workflows.
-- [ ] E5. Tag: `git tag v0.1.0 && git push origin v0.1.0`.
+## E. Password reset
+- [ ] E1. Request a reset for the registered phone → one OTP is sent; response says it expires in 15 minutes.
+- [ ] E2. Request a reset for an unknown phone → identical generic response and no SMS.
+- [ ] E3. Wrong OTP is rejected; correct OTP with a valid new password updates the account password once.
+- [ ] E4. Reusing the reset OTP is rejected; five wrong attempts consume the reset code.
+
+## F. Data and hygiene
+- [ ] F1. /admin: `student_registrations` rows, `user_accounts` linked one-to-one, `phone_verifications` and `password_resets` show no plaintext code.
+- [ ] F2. `git ls-files | grep -E "(^|/)\.env$"` → empty. No real student data in the repo.
+- [ ] F3. Fresh clone on another laptop following README → `/api/v1/health/` OK, web and mobile run.
+- [ ] F4. CI green on main for backend, web and mobile workflows.
+- [ ] F5. Tag: `git tag v0.1.0 && git push origin v0.1.0`.
 
 ## Known limitations to state in the demo
-1. No password reset or phone-number change; a student who forgets their password cannot recover the account yet.
-2. OTP runs in console mode unless Termii was configured and tested; console codes are visible in server logs.
-3. Web registration reveals whether a matric or phone is already registered (409) — accepted for usability.
-4. Demo hosting only: DEBUG on, cleartext HTTP on LAN (`usesCleartextTraffic`), ngrok URL — not production.
-5. No eligibility check against an approved CHDC student list.
-6. Home screen cases are synthetic placeholders.
-7. After logout the access token stays valid until it expires (≤ 15 min); only the refresh token is revoked.
-8. Rate limits are per IP; students behind one campus NAT share limits.
+1. OTP runs in console mode unless Termii was configured and tested; console codes are visible in server logs.
+2. Web registration reveals whether a matric or phone is already registered (409) — accepted for usability.
+3. Demo hosting only: DEBUG on, cleartext HTTP on LAN (`usesCleartextTraffic`), ngrok URL — not production.
+4. No eligibility check against an approved CHDC student list.
+5. Home screen cases are synthetic placeholders.
+6. After logout the access token stays valid until it expires (≤ 15 min); only the refresh token is revoked.
+7. Rate limits are per IP; students behind one campus NAT share limits.

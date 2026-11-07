@@ -35,17 +35,19 @@ export function RegisteredPage() {
           </div>
           <ol>
             <li>
-              <span>Download the CHDC E-Counselling app</span>
-              {config.appDownloadUrl
-                ? <a className="button button-primary download-button" href={config.appDownloadUrl} target="_blank" rel="noopener noreferrer">Download app <span aria-hidden="true">↗</span></a>
-                : <p className="step-detail">The download link will be shared by your counsellor.</p>}
+              <a className="button button-primary download-button" href="/download-app/">Download App (APK) <span aria-hidden="true">↗</span></a>
             </li>
             <li><span>Open the app and tap “Set up my account”.</span></li>
             <li><span>Enter this phone number: <strong>{phone}</strong></span></li>
-            <li><span>Enter the 6-digit SMS code, then choose a username and password.</span></li>
+            <li>
+              {registration.signup_code
+                ? <span>Enter this 6-digit code in the app, then choose a username and password: <strong className="signup-code">{registration.signup_code}</strong></span>
+                : <span>Enter the 6-digit SMS code, then choose a username and password.</span>}
+            </li>
           </ol>
-          {config.showDevOtp && !config.useMock && <DevOtpPanel phoneNumber={registration.phone_number} />}
-          <p className="expiry-note">Keep this phone with you — the code expires in 5 minutes.</p>
+          {registration.signup_code && <p className="expiry-note">This code is one-time-use and expires 24 hours after registration. Save it before leaving this page.</p>}
+          {!registration.signup_code && config.showDevOtp && !config.useMock && <DevOtpPanel phoneNumber={registration.phone_number} />}
+          {!registration.signup_code && <p className="expiry-note">Keep this phone with you — the code expires in 5 minutes.</p>}
         </section>
       </section>
     </main>

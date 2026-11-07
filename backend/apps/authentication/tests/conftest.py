@@ -22,6 +22,8 @@ def reset_cache_and_throttles(db, monkeypatch):
             "registration": "10000/minute",
             "otp_request": "10000/minute",
             "otp_verify": "10000/minute",
+            "password_reset_request": "10000/minute",
+            "password_reset_verify": "10000/minute",
             "setup": "10000/minute",
             "login": "10000/minute",
         },
@@ -44,8 +46,10 @@ def sent_codes(monkeypatch):
     calls = []
 
     class FakeProvider:
-        def send_code(self, phone_e164, code):
-            calls.append((phone_e164, code))
+        def send_code(
+            self, phone_e164, code, expires_in_seconds=300, purpose="verification code"
+        ):
+            calls.append((phone_e164, code, expires_in_seconds))
 
     monkeypatch.setattr(services_module, "get_otp_provider", lambda: FakeProvider())
     return calls

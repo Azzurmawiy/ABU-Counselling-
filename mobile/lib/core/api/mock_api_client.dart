@@ -14,8 +14,10 @@ class MockApiClient implements ApiClient {
 
   static const _mockAccess = 'mock-access-token';
   static const _mockRefresh = 'mock-refresh-token';
+  static const _registeredTestPhone = '+2348031234567';
   static const _genericOtpMessage =
       'If this number is registered and not yet set up, a verification code has been sent by SMS.';
+  bool _hasVerifiedSetupToken = false;
 
   Future<void> _delay() => Future<void>.delayed(
         const Duration(milliseconds: 600),
@@ -47,7 +49,15 @@ class MockApiClient implements ApiClient {
     required String code,
   }) async {
     await _delay();
+    if (phoneNumber != _registeredTestPhone) {
+      throw const ApiException(
+        statusCode: 400,
+        code: 'invalid_otp',
+        message: 'The code is incorrect.',
+      );
+    }
     if (code == '123456') {
+      _hasVerifiedSetupToken = true;
       return const OtpVerifyResult(
         setupToken: 'mock-setup-token',
         expiresIn: 600,
@@ -91,7 +101,7 @@ class MockApiClient implements ApiClient {
             'You must accept the NDPR consent policy to create an account.',
       );
     }
-    if (setupToken != 'mock-setup-token') {
+    if (setupToken != 'mock-setup-token' || !_hasVerifiedSetupToken) {
       throw const ApiException(
         statusCode: 400,
         code: 'setup_token_invalid',
@@ -115,6 +125,7 @@ class MockApiClient implements ApiClient {
       user: _mockUser(username: username.trim().toLowerCase()),
     );
     await _storage.save(access: session.access, refresh: session.refresh);
+    _hasVerifiedSetupToken = false;
     return session;
   }
 

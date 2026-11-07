@@ -40,7 +40,7 @@ class _CasesScreenState extends State<CasesScreen> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.fingerprint),
-                label: const Text('Unlock with Biometrics'),
+                label: const Text('Unlock with Biometrics or Device PIN'),
                 onPressed: _unlockCases,
               ),
             ],

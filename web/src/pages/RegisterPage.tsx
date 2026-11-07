@@ -11,8 +11,9 @@ const initialValues: RegistrationRequest = {
   last_name: '',
   matric_number: '',
   phone_number: '',
+  has_consented: false,
 }
-const fieldOrder: Array<keyof RegistrationRequest> = ['first_name', 'last_name', 'matric_number', 'phone_number']
+const fieldOrder: Array<keyof RegistrationRequest> = ['first_name', 'last_name', 'matric_number', 'phone_number', 'has_consented']
 
 export function RegisterPage() {
   const [values, setValues] = useState(initialValues)
@@ -27,7 +28,7 @@ export function RegisterPage() {
     setErrors((current) => ({ ...current, [name]: message }))
   }
 
-  function updateField(name: keyof RegistrationRequest, value: string) {
+  function updateField(name: keyof RegistrationRequest, value: string | boolean) {
     setValues((current) => ({ ...current, [name]: value }))
     setErrors((current) => ({ ...current, [name]: undefined }))
     setAlert(undefined)
@@ -43,6 +44,11 @@ export function RegisterPage() {
       document.getElementById(firstInvalid)?.focus()
       return
     }
+    if (!values.has_consented) {
+      setErrors({ ...nextErrors, has_consented: 'You must accept the NDPR consent policy to proceed.' })
+      document.querySelector<HTMLInputElement>('.consent-field input')?.focus()
+      return
+    }
 
     busyRef.current = true
     setPending(true)
@@ -53,6 +59,7 @@ export function RegisterPage() {
         last_name: values.last_name.trim(),
         matric_number: values.matric_number.trim(),
         phone_number: values.phone_number.trim(),
+        has_consented: values.has_consented,
       })
       navigate('/registered', { state: response, replace: true })
     } catch (error) {
@@ -63,10 +70,14 @@ export function RegisterPage() {
         const extras: string[] = []
         for (const [name, messages] of Object.entries(error.fields)) {
           if (name === 'non_field_errors') continue
-          if (fieldOrder.includes(name as keyof RegistrationRequest)) matched[name as keyof RegistrationRequest] = messages[0]
-          else extras.push(...messages)
+          const field = fieldOrder.find((fieldName) => fieldName === name)
+          if (field) {
+            if (messages[0]) matched[field] = messages[0]
+          } else {
+            extras.push(...messages)
+          }
         }
-        setErrors((current) => ({ ...current, ...matched }))
+        setErrors(matched)
         setAlert([error.message, ...(error.fields.non_field_errors ?? []), ...extras].join(' '))
       } else if (error.code === 'rate_limited') {
         setAlert(error.retryAfter !== undefined
@@ -114,6 +125,18 @@ export function RegisterPage() {
               onChange={(event) => updateField('phone_number', event.target.value)}
               onBlur={(event) => validateField('phone_number', event.target.value)} error={errors.phone_number} />
           </div>
+          <label className="consent-field">
+            <input
+              id="has_consented"
+              type="checkbox"
+              checked={values.has_consented ?? false}
+              aria-invalid={Boolean(errors.has_consented)}
+              aria-describedby={errors.has_consented ? 'consent-error' : undefined}
+              onChange={(event) => updateField('has_consented', event.target.checked)}
+            />
+            <span>I agree to the processing of my personal data in accordance with the Nigeria Data Protection Regulation (NDPR) privacy policy.</span>
+          </label>
+          {errors.has_consented && <p className="field-error" id="consent-error">{errors.has_consented}</p>}
           {alert && <Alert type="error">{alert}</Alert>}
           <button className="button button-primary submit-button" type="submit" disabled={pending} aria-busy={pending}>
             {pending ? 'Registering…' : 'Register'}{!pending && <span aria-hidden="true">→</span>}

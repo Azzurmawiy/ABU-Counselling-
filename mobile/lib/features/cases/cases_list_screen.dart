@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:local_auth/local_auth.dart';
 
 import 'case_controller.dart';
 
@@ -12,32 +11,6 @@ class CasesListScreen extends StatefulWidget {
 }
 
 class _CasesListScreenState extends State<CasesListScreen> {
-  final LocalAuthentication _auth = LocalAuthentication();
-
-  Future<void> _authenticateAndOpenCase(dynamic caseItem) async {
-    try {
-      final didAuthenticate = await _auth.authenticate(
-        localizedReason:
-            'Authenticate with biometrics or your device passcode to view this case',
-        biometricOnly: false,
-      );
-
-      if (didAuthenticate && mounted) {
-        _openCaseDetails(caseItem);
-      }
-    } on LocalAuthException {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Device authentication failed. Set up biometrics or a screen lock to access cases.',
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   void _openCaseDetails(dynamic caseItem) {
     Navigator.pushNamed(
       context,
@@ -97,7 +70,7 @@ class _CasesListScreenState extends State<CasesListScreen> {
                     subtitle:
                         const Text('Tap to authenticate and view details'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _authenticateAndOpenCase(caseItem),
+                    onTap: () => _openCaseDetails(caseItem),
                   ),
                 );
               },

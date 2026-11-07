@@ -1,5 +1,44 @@
 import pytest
 
+from apps.authentication import services
+from apps.authentication.models import PhoneVerification
+
+
+@pytest.mark.django_db
+def test_verify_otp_allows_ten_incorrect_attempts_before_lockout(
+    api_client, registration, sent_codes, monkeypatch
+):
+    monkeypatch.setattr(services.settings, "OTP_MAX_ATTEMPTS", 10)
+    request_response = api_client.post(
+        "/api/v1/auth/otp/request/",
+        {"phone_number": "08031234567"},
+        format="json",
+    )
+    assert request_response.status_code == 200
+    request_id = request_response.data["request_id"]
+    wrong_code = "000000" if sent_codes[-1][1] != "000000" else "000001"
+
+    responses = [
+        api_client.post(
+            "/api/v1/auth/otp/verify/",
+            {
+                "phone_number": "08031234567",
+                "request_id": request_id,
+                "code": wrong_code,
+            },
+            format="json",
+        )
+        for _ in range(10)
+    ]
+
+    assert all(response.data["error"]["code"] == "invalid_otp" for response in responses[:9])
+    assert responses[0].data["error"]["attempts_remaining"] == 9
+    assert responses[8].data["error"]["attempts_remaining"] == 1
+    assert responses[9].data["error"]["code"] == "otp_attempts_exceeded"
+    verification = PhoneVerification.objects.get(id=request_id)
+    assert verification.attempts == 10
+    assert verification.max_attempts == 10
+
 
 @pytest.mark.django_db
 def test_verify_otp_with_correct_code_returns_setup_token(api_client, registration, sent_codes):

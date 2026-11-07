@@ -15,12 +15,21 @@ from apps.authentication.serializers import (
     LogoutSerializer,
     OtpRequestSerializer,
     OtpVerifySerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     RefreshSerializer,
     SetupAccountSerializer,
     UserSerializer,
 )
 from apps.authentication.otp.dev_codes import dev_codes_enabled, recent_codes
-from apps.authentication.services import issue_tokens, request_otp, setup_account, verify_otp
+from apps.authentication.services import (
+    confirm_password_reset,
+    issue_tokens,
+    request_otp,
+    request_password_reset,
+    setup_account,
+    verify_otp,
+)
 from apps.common.exceptions import InvalidCredentialsError, InvalidOtpError, SetupTokenInvalidError
 from apps.common.phone import InvalidPhoneNumber, normalize_ng_phone
 from apps.common.views import not_found
@@ -56,6 +65,47 @@ class OtpVerifyView(PublicAPIView):
             serializer.validated_data["code"],
         )
         return Response(payload, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=PasswordResetRequestSerializer,
+    responses={200: None},
+    summary="Request password reset",
+)
+class PasswordResetRequestView(PublicAPIView):
+    throttle_scope = "password_reset_request"
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            request_password_reset(serializer.validated_data["phone_number"]),
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    request=PasswordResetConfirmSerializer,
+    responses={200: None},
+    summary="Confirm password reset",
+)
+class PasswordResetConfirmView(PublicAPIView):
+    throttle_scope = "password_reset_verify"
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        confirm_password_reset(
+            data["phone_number"],
+            data["request_id"],
+            data["otp_code"],
+            data["new_password"],
+        )
+        return Response(
+            {"message": "Password updated successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(request=SetupAccountSerializer, responses={201: None}, summary="Setup account")

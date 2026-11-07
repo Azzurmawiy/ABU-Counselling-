@@ -86,6 +86,7 @@ class PhoneVerification(models.Model):
     setup_token_hash = models.CharField(max_length=64, null=True, blank=True, unique=True)
     setup_token_expires_at = models.DateTimeField(null=True, blank=True)
     setup_token_used_at = models.DateTimeField(null=True, blank=True)
+    is_registration_code = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -94,3 +95,16 @@ class PhoneVerification(models.Model):
 
     def __str__(self):
         return f"{self.phone_number} ({self.registration})"
+
+
+class PasswordReset(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    phone_number = models.CharField(max_length=14, db_index=True)
+    otp_code = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "password_resets"
+        ordering = ["-expires_at"]

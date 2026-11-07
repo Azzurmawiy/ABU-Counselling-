@@ -16,18 +16,19 @@ def dev_codes_enabled() -> bool:
     return settings.DEBUG and settings.OTP_PROVIDER == "console"
 
 
-def remember_code(phone_e164: str, code: str) -> None:
+def remember_code(phone_e164: str, code: str, expires_in_seconds=None) -> None:
     if not dev_codes_enabled():
         return
+    ttl = expires_in_seconds or settings.OTP_TTL_SECONDS
     now = timezone.now()
     entry = {
         "phone_number": phone_e164,
         "code": code,
         "sent_at": now.isoformat(),
-        "expires_at": (now + timedelta(seconds=settings.OTP_TTL_SECONDS)).isoformat(),
+        "expires_at": (now + timedelta(seconds=ttl)).isoformat(),
     }
     codes = [entry, *recent_codes()][:MAX_CODES]
-    cache.set(CACHE_KEY, codes, timeout=settings.OTP_TTL_SECONDS)
+    cache.set(CACHE_KEY, codes, timeout=ttl)
 
 
 def recent_codes(phone_e164: str | None = None) -> list[dict]:

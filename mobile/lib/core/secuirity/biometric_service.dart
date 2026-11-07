@@ -1,34 +1,75 @@
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
-class BiometricService {
+abstract interface class LocalAuthenticationClient {
+  Future<bool> get canCheckBiometrics;
+  Future<List<BiometricType>> getAvailableBiometrics();
+  Future<bool> isDeviceSupported();
+  Future<bool> authenticate({
+    required String localizedReason,
+    required bool biometricOnly,
+    required bool stickyAuth,
+  });
+}
+
+class _PluginLocalAuthenticationClient implements LocalAuthenticationClient {
   final LocalAuthentication _auth;
 
-  BiometricService({LocalAuthentication? auth})
-      : _auth = auth ?? LocalAuthentication();
+  _PluginLocalAuthenticationClient(this._auth);
 
-  /// Checks if hardware supports biometrics and device pin/passcode.
+  @override
+  Future<bool> get canCheckBiometrics => _auth.canCheckBiometrics;
+
+  @override
+  Future<List<BiometricType>> getAvailableBiometrics() =>
+      _auth.getAvailableBiometrics();
+
+  @override
+  Future<bool> isDeviceSupported() => _auth.isDeviceSupported();
+
+  @override
+  Future<bool> authenticate({
+    required String localizedReason,
+    required bool biometricOnly,
+    required bool stickyAuth,
+  }) {
+    return _auth.authenticate(
+      localizedReason: localizedReason,
+      biometricOnly: biometricOnly,
+      persistAcrossBackgrounding: stickyAuth,
+    );
+  }
+}
+
+class BiometricService {
+  final LocalAuthenticationClient _auth;
+
+  BiometricService({LocalAuthenticationClient? auth})
+      : _auth = auth ?? _PluginLocalAuthenticationClient(LocalAuthentication());
+
+  /// Returns true only when at least one biometric is enrolled and usable.
   Future<bool> isBiometricsAvailable() async {
     try {
-      final canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
-      final isDeviceSupported = await _auth.isDeviceSupported();
-      return canAuthenticateWithBiometrics || isDeviceSupported;
-    } on PlatformException catch (_) {
+      if (!await _auth.canCheckBiometrics) return false;
+      return (await _auth.getAvailableBiometrics()).isNotEmpty;
+    } on LocalAuthException {
+      return false;
+    } on PlatformException {
       return false;
     }
   }
 
-  /// Prompts user for Face ID / Touch ID / Passcode unlock.
+  /// Uses Android's system prompt with device credentials allowed as fallback.
   Future<bool> authenticate({required String localizedReason}) async {
     try {
-      final isAvailable = await isBiometricsAvailable();
-      if (!isAvailable) return true; // Fallback if biometrics aren't configured on device
-
       return await _auth.authenticate(
         localizedReason: localizedReason,
         biometricOnly: false,
+        stickyAuth: true,
       );
-    } on PlatformException catch (_) {
+    } on PlatformException {
+      return false;
+    } on LocalAuthException {
       return false;
     }
   }

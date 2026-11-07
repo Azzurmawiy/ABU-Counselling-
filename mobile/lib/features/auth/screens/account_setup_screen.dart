@@ -179,6 +179,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                       labelText: 'Username',
                       helperText: '3–30 characters: lowercase letters, digits or _',
                       errorText: _usernameError,
+                      errorMaxLines: 3,
                       border: const OutlineInputBorder(),
                     ),
                   ),
@@ -191,6 +192,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                     decoration: InputDecoration(
                       labelText: 'Password',
                       errorText: _passwordError,
+                      errorMaxLines: 3,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         tooltip: _passwordVisible
@@ -216,6 +218,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                     decoration: InputDecoration(
                       labelText: 'Confirm password',
                       errorText: _confirmError,
+                      errorMaxLines: 3,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         tooltip:
