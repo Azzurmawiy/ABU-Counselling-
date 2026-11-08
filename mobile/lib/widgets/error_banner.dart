@@ -15,6 +15,9 @@ class ErrorBanner extends StatelessWidget {
         ),
         child: Text(
           message,
+          softWrap: true,
+          maxLines: null,
+          textWidthBasis: TextWidthBasis.parent,
           style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
         ),
       );

@@ -6,7 +6,9 @@ from apps.authentication.views import DevOtpCodesView
 from apps.common import views
 
 urlpatterns = [
+    path("", views.frontend, name="frontend"),
     path("admin/", admin.site.urls),
+    path("download-app/", views.download_app, name="download-app"),
     path("api/v1/health/", views.health),
     path("api/v1/registrations/", include("apps.registrations.urls")),
     path("api/v1/auth/", include("apps.authentication.urls")),

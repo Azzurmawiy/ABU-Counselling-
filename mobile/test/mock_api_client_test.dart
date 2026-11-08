@@ -60,12 +60,26 @@ void main() {
     }
   });
 
-  test('setup rejects invalid token and duplicate username', () async {
+  test('generic test OTP cannot verify an unregistered phone number',
+      () async {
+    await expectLater(
+      api.verifyOtp(
+        phoneNumber: '+2348099999998',
+        requestId: 'request',
+        code: '123456',
+      ),
+      throwsA(isA<ApiException>().having(
+        (error) => error.code,
+        'code',
+        'invalid_otp',
+      )),
+    );
     await expectLater(
       api.setupAccount(
-        setupToken: 'wrong',
-        username: 'amina_b',
+        setupToken: 'mock-setup-token',
+        username: 'unregistered_user',
         password: 'S3cure!pass',
+        hasConsented: true,
       ),
       throwsA(isA<ApiException>().having(
         (error) => error.code,
@@ -73,11 +87,33 @@ void main() {
         'setup_token_invalid',
       )),
     );
+  });
+
+  test('setup rejects invalid token and duplicate username', () async {
+    await expectLater(
+      api.setupAccount(
+        setupToken: 'wrong',
+        username: 'amina_b',
+        password: 'S3cure!pass',
+        hasConsented: true,
+      ),
+      throwsA(isA<ApiException>().having(
+        (error) => error.code,
+        'code',
+        'setup_token_invalid',
+      )),
+    );
+    await api.verifyOtp(
+      phoneNumber: '+2348031234567',
+      requestId: 'request',
+      code: '123456',
+    );
     await expectLater(
       api.setupAccount(
         setupToken: 'mock-setup-token',
         username: 'taken_user',
         password: 'S3cure!pass',
+        hasConsented: true,
       ),
       throwsA(isA<ApiException>().having(
         (error) => error.fieldError('username'),
@@ -89,17 +125,35 @@ void main() {
 
   test('setup and login save tokens, me reads user, logout clears tokens',
       () async {
+    await api.verifyOtp(
+      phoneNumber: '+2348031234567',
+      requestId: 'request',
+      code: '123456',
+    );
     final session = await api.setupAccount(
       setupToken: 'mock-setup-token',
       username: 'amina_b',
       password: 'S3cure!pass',
+      hasConsented: true,
     );
     expect(session.user.username, 'amina_b');
     expect(await storage.readAccess(), 'mock-access-token');
     expect(await storage.readRefresh(), 'mock-refresh-token');
     expect((await api.me()).phoneNumber, '+2348031234567');
     expect(await api.hasSession(), isTrue);
-
+    await expectLater(
+      api.setupAccount(
+        setupToken: 'mock-setup-token',
+        username: 'another_user',
+        password: 'S3cure!pass',
+        hasConsented: false,
+      ),
+      throwsA(isA<ApiException>().having(
+        (error) => error.code,
+        'code',
+        'validation_error',
+      )),
+    );
     await api.logout();
     expect(await storage.readAccess(), isNull);
     expect(await api.hasSession(), isFalse);

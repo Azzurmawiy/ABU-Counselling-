@@ -13,27 +13,36 @@ not connected to the API and must not be used for real counselling records.
 flutter pub get
 ```
 
-## Run with mock authentication
+## Run in mock mode
 
 ```sh
 flutter run --dart-define=USE_MOCK=true
 ```
 
-Mock mode is enabled by default and is marked by a `MOCK API` banner. Mock
-session tokens are stored using secure storage to exercise session restore.
+Mock mode persists mock session tokens in secure storage so restarting the app
+exercises the normal session restore flow. The app uses the live backend unless
+mock mode is explicitly enabled.
 
 | Flow | Mock input |
 |---|---|
-| Request OTP | Any valid Nigerian mobile number |
+| Request OTP | Any valid phone number receives the generic response |
+| Verify mock OTP | `+2348031234567` with code `123456` (registered mock student) |
 | Rate limit | `08000000429` |
 | Expired OTP | `000000` |
 | Too many OTP attempts | `999999` |
-| Successful OTP | `123456` |
 | Incorrect OTP | Any other six-digit code |
 | Duplicate username | `taken_user` |
 | Successful login | `student1` / `Password123!` |
 
-## Run against the backend
+For local mock mode, `123456` only verifies the mock student
+`+2348031234567`. The development backend accepts `123456` only for web
+registrations explicitly listed in `OTP_DEV_TEST_PHONES`, with
+`DJANGO_DEBUG=true` and `OTP_PROVIDER=console`. Other registered numbers use
+their generated development code; unregistered numbers are rejected before
+the OTP screen. List allowlisted numbers in E.164 format (for example,
+`+2348031234567`). Production backends continue generating random OTPs.
+
+## Run against the live backend
 
 Start the backend first. The API base URL must include `/api/v1/`:
 
@@ -73,6 +82,21 @@ registration URLs are compiled into the app; rebuild if they change.
 - Biometric case access is prototype UI, not a security boundary. Do not enter
   real sensitive counselling details until case storage and access control are
   implemented and reviewed.
+
+## Publish a signed Android release
+
+Create and push a version tag matching `mobile/pubspec.yaml` (for example,
+`v1.0.1`). The Android Release workflow builds a signed APK and AAB and attaches
+both to a GitHub Release. Configure these GitHub Actions settings first:
+
+- Repository secret `ANDROID_KEYSTORE_BASE64`: base64-encoded upload keystore
+- Repository secrets `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and
+  `ANDROID_KEY_PASSWORD`
+- Repository variables `API_BASE_URL` and `WEB_REGISTRATION_URL`, both HTTPS
+  URLs for the production services
+
+The Android release build requires `mobile/android/key.properties`; it does not
+fall back to the debug signing key. Keep the keystore and passwords private.
 
 ## Checks
 

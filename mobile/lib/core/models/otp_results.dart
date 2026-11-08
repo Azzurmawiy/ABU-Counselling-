@@ -4,12 +4,14 @@ class OtpRequestResult {
     required this.message,
     required this.expiresIn,
     required this.resendAfter,
+    this.isRegistrationCode = false,
   });
 
   final String requestId;
   final String message;
   final int expiresIn;
   final int resendAfter;
+  final bool isRegistrationCode;
 
   factory OtpRequestResult.fromJson(Map<String, dynamic> json) =>
       OtpRequestResult(
@@ -17,6 +19,7 @@ class OtpRequestResult {
         message: json['message'] as String,
         expiresIn: json['expires_in'] as int,
         resendAfter: json['resend_after'] as int,
+        isRegistrationCode: json['is_registration_code'] as bool? ?? false,
       );
 }
 

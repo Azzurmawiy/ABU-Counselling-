@@ -4,13 +4,11 @@ import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
 import 'core/api/http_api_client.dart';
 import 'core/api/mock_api_client.dart';
-import 'core/env.dart';
+import 'config/env.dart';
 import 'core/storage/token_storage.dart';
-// If your concrete class has a different name like SecureTokenStorage, import it instead
-// import 'core/storage/secure_token_storage.dart'; 
 import 'features/auth/auth_controller.dart';
 import 'features/cases/case_controller.dart';
-import 'features/navigation/routes.dart';
+import 'config/routes.dart';
 
 void main() {
   runApp(const ChdcApp());
@@ -23,16 +21,20 @@ class ChdcApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // 1. Provide the ApiClient (Mock or HTTP)
         Provider<ApiClient>(
           create: (_) {
-            // Replace SecureTokenStorage() with whatever concrete class implements TokenStorage in your storage folder
             final tokenStorage = SecureTokenStorage(); 
             return Env.useMock
                 ? MockApiClient(tokenStorage)
                 : HttpApiClient(tokenStorage);
           },
         ),
-        ChangeNotifierProvider(create: (_) => AuthController()),
+        // 2. Pass the ApiClient into AuthController using ChangeNotifierProxyProvider
+        ChangeNotifierProxyProvider<ApiClient, AuthController>(
+          create: (context) => AuthController(context.read<ApiClient>())..bootstrap(),
+          update: (context, api, previous) => previous ?? AuthController(api),
+        ),
         ChangeNotifierProvider(create: (_) => CaseController()),
       ],
       child: MaterialApp(
@@ -45,7 +47,7 @@ class ChdcApp extends StatelessWidget {
             error: const Color(0xFFFB3261),
           ),
         ),
-        initialRoute: Routes.welcome,
+        initialRoute: Routes.welcome, // Or your SplashScreen route if you have one set up
         onGenerateRoute: Routes.onGenerateRoute,
         builder: (context, child) {
           if (Env.useMock && child != null) {

@@ -42,9 +42,11 @@ void main() {
               'message': 'sent',
               'expires_in': 300,
               'resend_after': 60,
+              'is_registration_code': true,
             });
           case '/api/v1/auth/otp/verify/':
-            return jsonResponse({'setup_token': 'setup-token', 'expires_in': 600});
+            return jsonResponse(
+                {'setup_token': 'setup-token', 'expires_in': 600});
           case '/api/v1/auth/setup-account/':
           case '/api/v1/auth/login/':
             return jsonResponse(sessionJson());
@@ -63,7 +65,8 @@ void main() {
       }),
     );
 
-    await client.requestOtp('+2348031234567');
+    final otpRequest = await client.requestOtp('+2348031234567');
+    expect(otpRequest.isRegistrationCode, isTrue);
     await client.verifyOtp(
       phoneNumber: '+2348031234567',
       requestId: 'request-id',
@@ -73,6 +76,7 @@ void main() {
       setupToken: 'setup-token',
       username: 'Amina_B',
       password: 'S3cure!pass',
+      hasConsented: true,
     );
     await client.login(username: 'Amina_B', password: 'S3cure!pass');
     await client.me();
@@ -104,13 +108,14 @@ void main() {
       'setup_token': 'setup-token',
       'username': 'amina_b',
       'password': 'S3cure!pass',
+      'has_consented': true,
     });
     expect(jsonDecode(seen[3].body), {
       'username': 'amina_b',
       'password': 'S3cure!pass',
     });
-    expect(seen[4].headers['authorization'], 'Bearer access-token');
     expect(jsonDecode(seen[5].body), {'refresh': 'refresh-token'});
+    expect(seen[5].headers['authorization'], 'Bearer access-token');
     expect(seen[5].headers['authorization'], 'Bearer access-token');
   });
 
@@ -123,7 +128,9 @@ void main() {
           'code': 'rate_limited',
           'message': 'Wait',
           'retry_after': 42,
-          'fields': {'phone_number': ['Invalid phone']},
+          'fields': {
+            'phone_number': ['Invalid phone']
+          },
         },
       }),
     );
@@ -185,8 +192,8 @@ void main() {
     final api = HttpApiClient(
       storage,
       client: MockClient((request) async => jsonResponse({
-        'error': {'code': 'token_invalid', 'message': 'Expired'},
-      }, status: 401)),
+            'error': {'code': 'token_invalid', 'message': 'Expired'},
+          }, status: 401)),
     );
 
     await expectLater(
@@ -211,7 +218,8 @@ void main() {
         expect(request.headers['ngrok-skip-browser-warning'], 'true');
         if (request.url.path == '/api/v1/auth/me/') {
           meCalls++;
-          if ((request.headers['authorization'] ?? '').endsWith('expired-access')) {
+          if ((request.headers['authorization'] ?? '')
+              .endsWith('expired-access')) {
             return jsonResponse({
               'error': {'code': 'token_invalid', 'message': 'Expired'},
             }, status: 401);

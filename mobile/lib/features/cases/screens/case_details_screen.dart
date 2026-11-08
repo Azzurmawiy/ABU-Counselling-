@@ -1,102 +1,28 @@
 import 'package:flutter/material.dart';
 
-class CaseDetailsScreen extends StatelessWidget {
-  final dynamic caseItem;
+class CaseDetailScreen extends StatelessWidget {
+  const CaseDetailScreen({super.key, required this.caseData});
 
-  const CaseDetailsScreen({super.key, this.caseItem});
+  final Map<String, dynamic> caseData;
 
   @override
   Widget build(BuildContext context) {
-    String title = 'Case Details';
-    String status = 'Active';
-    String description = 'No description provided.';
-    String caseId = 'N/A';
-    String date = 'N/A';
-    Map<String, dynamic> debugData = {};
-
-    try {
-      if (caseItem != null) {
-        try {
-          if (caseItem.toJson() is Map) {
-            debugData = Map<String, dynamic>.from(caseItem.toJson());
-          }
-        } catch (_) {
-          try {
-            if (caseItem.toMap() is Map) {
-              debugData = Map<String, dynamic>.from(caseItem.toMap());
-            }
-          } catch (_) {}
-        }
-
-        title = debugData['title'] ?? 
-                debugData['name'] ?? 
-                debugData['caseName'] ?? 
-                _tryGetProperty(caseItem, 'title') ?? 
-                _tryGetProperty(caseItem, 'name') ?? 
-                'Case Details';
-
-        status = debugData['status'] ?? 
-                 _tryGetProperty(caseItem, 'status') ?? 
-                 'Active';
-
-        description = debugData['description'] ?? 
-                      debugData['details'] ?? 
-                      debugData['notes'] ?? 
-                      _tryGetProperty(caseItem, 'description') ?? 
-                      _tryGetProperty(caseItem, 'notes') ?? 
-                      'No description provided.';
-
-        caseId = debugData['id']?.toString() ?? 
-                 debugData['caseId']?.toString() ?? 
-                 _tryGetProperty(caseItem, 'id')?.toString() ?? 
-                 'N/A';
-
-        date = debugData['date'] ?? 
-               debugData['createdAt'] ?? 
-               _tryGetProperty(caseItem, 'date')?.toString() ?? 
-               'N/A';
-      }
-    } catch (e) {
-      debugPrint('Error parsing case details: $e');
-    }
+    // Extract pseudonym or fallback to a secure default placeholder
+    final String pseudonym = caseData['pseudonym'] ?? 'Blue Sun';
+    final String status = caseData['status'] ?? 'Active';
+    final String createdAt = caseData['created_at'] ?? 'Recently';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title.toString()),
+        title: Text("Case: $pseudonym"),
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Chip(
-                  label: Text(status.toString()),
-                  backgroundColor: Colors.blue.shade50,
-                  labelStyle: const TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Row(
-                  children: [
-                    Icon(Icons.verified, color: Colors.green, size: 18),
-                    SizedBox(width: 4),
-                    Text(
-                      'Biometric Verified',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+            // Pseudonymous Identity Card
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -107,103 +33,118 @@ class CaseDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Case Information',
-                      style: TextStyle(
-                        fontSize: 18,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Assigned Pseudonym:",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              color: Colors.green[800],
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      pseudonym,
+                      style: const TextStyle(
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: Colors.indigo,
                       ),
                     ),
-                    const Divider(height: 24),
-                    _buildInfoRow('Case ID', caseId),
                     const SizedBox(height: 12),
-                    _buildInfoRow('Title', title),
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Date Created', date),
-                    if (debugData.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      ...debugData.entries.where((e) => !['title', 'name', 'status', 'description', 'id', 'date', 'createdAt'].contains(e.key)).map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _buildInfoRow(_formatKey(entry.key), entry.value?.toString() ?? 'N/A'),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Logged On: $createdAt",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Privacy Notice Container (Replacing sensitive case descriptions)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 18, color: Colors.brown),
+                      SizedBox(width: 8),
+                      Text(
+                        "Privacy & Confidentiality Protected",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.brown,
+                          fontSize: 14,
                         ),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Sensitive case descriptions and real student credentials are hidden from this view to ensure strict data security and compliance.",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black87,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Description / Notes',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(height: 24),
-                    Text(
-                      description.toString(),
-                      style: const TextStyle(fontSize: 15, height: 1.4),
-                    ),
-                  ],
-                ),
+
+            const Spacer(),
+
+            // Action button to open the Dummy Chat preview
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/chat');
+              },
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: const Text("Open Counselor Chat"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
-    );
-  }
-
-  dynamic _tryGetProperty(dynamic obj, String propertyName) {
-    try {
-      if (propertyName == 'title') return obj.title;
-      if (propertyName == 'name') return obj.name;
-      if (propertyName == 'status') return obj.status;
-      if (propertyName == 'description') return obj.description;
-      if (propertyName == 'id') return obj.id;
-      if (propertyName == 'date') return obj.date;
-    } catch (_) {}
-    return null;
-  }
-
-  String _formatKey(String key) {
-    if (key.isEmpty) return key;
-    return key[0].toUpperCase() + key.substring(1).replaceAll(RegExp(r'(?=[A-Z])'), ' ');
   }
 }

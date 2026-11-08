@@ -1,4 +1,5 @@
 import logging
+import math
 
 import requests
 from django.conf import settings
@@ -15,29 +16,51 @@ class OtpDeliveryError(Exception):
     pass
 
 
-SMS_TEMPLATE = "Your CHDC E-Counselling verification code is {code}. It expires in 5 minutes. Do not share it with anyone."
+SMS_TEMPLATE = "Your CHDC E-Counselling {code_purpose} is {code}. It expires in {expires_in_minutes} minutes. Do not share it with anyone."
 
 
 class BaseOtpProvider:
-    def send_code(self, phone_e164: str, code: str) -> None:
+    def send_code(
+        self,
+        phone_e164: str,
+        code: str,
+        expires_in_seconds: int = 300,
+        purpose: str = "verification code",
+    ) -> None:
         raise NotImplementedError
 
 
 class ConsoleOtpProvider(BaseOtpProvider):
-    def send_code(self, phone_e164: str, code: str) -> None:
+    def send_code(
+        self,
+        phone_e164: str,
+        code: str,
+        expires_in_seconds: int = 300,
+        purpose: str = "verification code",
+    ) -> None:
         logger.warning("[DEV OTP] phone=%s code=%s", phone_e164, code)
-        remember_code(phone_e164, code)
+        remember_code(phone_e164, code, expires_in_seconds)
 
 
 class TermiiOtpProvider(BaseOtpProvider):
-    def send_code(self, phone_e164: str, code: str) -> None:
+    def send_code(
+        self,
+        phone_e164: str,
+        code: str,
+        expires_in_seconds: int = 300,
+        purpose: str = "verification code",
+    ) -> None:
         base_url = settings.TERMII_BASE_URL.rstrip("/")
         url = base_url if base_url.endswith("/api/sms/send") else f"{base_url}/api/sms/send"
         payload = {
             "api_key": settings.TERMII_API_KEY,
             "to": phone_e164.lstrip("+"),
             "from": settings.TERMII_SENDER_ID,
-            "sms": SMS_TEMPLATE.format(code=code),
+            "sms": SMS_TEMPLATE.format(
+                code=code,
+                code_purpose=purpose,
+                expires_in_minutes=max(1, math.ceil(expires_in_seconds / 60)),
+            ),
             "type": "plain",
             "channel": settings.TERMII_CHANNEL,
         }

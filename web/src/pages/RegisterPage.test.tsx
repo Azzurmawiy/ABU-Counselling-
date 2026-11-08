@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as registrations from '../api/registrations'
+import { ApiError } from '../api/types'
 import { RegisterPage } from './RegisterPage'
 
 vi.mock('../config', () => ({ config: { apiBaseUrl: 'http://localhost:8000', useMock: true, appDownloadUrl: '' } }))
@@ -17,6 +19,7 @@ function fillValid(matric = 'CHDC/0001') {
   fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Bello' } })
   fireEvent.change(screen.getByLabelText('Matric number'), { target: { value: matric } })
   fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: '08031234567' } })
+  fireEvent.click(screen.getByRole('checkbox'))
 }
 
 describe('RegisterPage', () => {
@@ -25,19 +28,93 @@ describe('RegisterPage', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Register' }))
     expect(screen.getAllByText('This field is required.')).toHaveLength(4)
+    expect(screen.getByLabelText('Matric number')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Phone number')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.queryByText("You're registered, Amina!")).not.toBeInTheDocument()
+  })
+  it.each([
+    ['Matric number', '12345678', 'Matric number must be exactly 9 characters.', 'matric_number-error'],
+    ['Phone number', '0803123456', 'Phone number must be exactly 11 digits.', 'phone_number-error'],
+  ])('shows a field-level length error for %s', async (label, value, message, errorId) => {
+    renderPage()
+    fillValid()
+    fireEvent.change(screen.getByLabelText(label), { target: { value } })
+    fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+    expect(await screen.findByText(message)).toBeInTheDocument()
+    expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText(label).getAttribute('aria-describedby')?.split(' ')).toContain(errorId)
+    expect(screen.queryByText(/correct the highlighted/i)).not.toBeInTheDocument()
   })
   it('shows duplicate matric field error and alert', async () => {
     renderPage()
-    fillValid('chdc/dup')
+    fillValid('chdc/dup1')
     fireEvent.click(screen.getByRole('button', { name: 'Register' }))
     expect(await screen.findByText('This matric number is already registered.', {}, { timeout: 2000 })).toBeInTheDocument()
+    expect(screen.getByLabelText('Matric number')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Matric number')).toHaveAttribute('aria-describedby', 'matric_number-error')
     expect(screen.getByText('Some details are already registered.')).toBeInTheDocument()
+  })
+  it('shows backend phone errors on and highlights the phone field', async () => {
+    renderPage()
+    fillValid()
+    fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: '08000000001' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+    expect(await screen.findByText('This phone number is already registered.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Phone number')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Phone number')).toHaveAttribute('aria-describedby', 'phone_number-helper phone_number-error')
+  })
+  it('maps backend serializer errors to each matching form field', async () => {
+    vi.spyOn(registrations, 'registerStudent').mockRejectedValueOnce(new ApiError(
+      400,
+      'validation_error',
+      'Please correct the highlighted fields.',
+      {
+        first_name: ['Enter a valid first name.'],
+        last_name: ['Enter a valid last name.'],
+        matric_number: ['Matric number is already in use.'],
+        phone_number: ['Phone number is already in use.'],
+      },
+    ))
+    renderPage()
+    fillValid()
+    fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    for (const [label, message] of [
+      ['First name', 'Enter a valid first name.'],
+      ['Last name', 'Enter a valid last name.'],
+      ['Matric number', 'Matric number is already in use.'],
+      ['Phone number', 'Phone number is already in use.'],
+    ]) {
+      expect(await screen.findByText(message)).toBeInTheDocument()
+      expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true')
+    }
+    expect(screen.getByText('Please correct the highlighted fields.')).toBeInTheDocument()
+  })
+  it('clears corrected field errors and submits valid details', async () => {
+    renderPage()
+    fillValid('short')
+    fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+    expect(await screen.findByText('Matric number must be exactly 9 characters.')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Matric number'), { target: { value: 'X12345678' } })
+    expect(screen.getByLabelText('Matric number')).toHaveAttribute('aria-invalid', 'false')
+    expect(screen.queryByText('Matric number must be exactly 9 characters.')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+    await waitFor(() => expect(screen.getByText("You're registered, Amina!")).toBeInTheDocument(), { timeout: 2000 })
   })
   it('navigates to confirmation after successful registration', async () => {
     renderPage()
     fillValid()
     fireEvent.click(screen.getByRole('button', { name: 'Register' }))
     await waitFor(() => expect(screen.getByText("You're registered, Amina!")).toBeInTheDocument(), { timeout: 2000 })
+  })
+  it('requires privacy consent before submitting', () => {
+    renderPage()
+    fillValid()
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+    expect(screen.getByText('You must accept the NDPR consent policy to proceed.')).toBeInTheDocument()
+    expect(screen.queryByText("You're registered, Amina!")).not.toBeInTheDocument()
   })
 })

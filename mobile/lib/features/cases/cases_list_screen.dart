@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:local_auth/local_auth.dart';
 
 import 'case_controller.dart';
 
@@ -12,31 +11,6 @@ class CasesListScreen extends StatefulWidget {
 }
 
 class _CasesListScreenState extends State<CasesListScreen> {
-  final LocalAuthentication _auth = LocalAuthentication();
-
-  Future<void> _authenticateAndOpenCase(dynamic caseItem) async {
-    try {
-      final bool canAuthenticate =
-          await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
-
-      if (!canAuthenticate) {
-        _openCaseDetails(caseItem);
-        return;
-      }
-
-      final bool didAuthenticate = await _auth.authenticate(
-        localizedReason: 'Please authenticate with Face ID or Touch ID to view this case',
-      );
-
-      if (didAuthenticate) {
-        _openCaseDetails(caseItem);
-      }
-    } catch (e) {
-      debugPrint('Biometric authentication error: $e');
-      _openCaseDetails(caseItem);
-    }
-  }
-
   void _openCaseDetails(dynamic caseItem) {
     Navigator.pushNamed(
       context,
@@ -76,16 +50,27 @@ class _CasesListScreenState extends State<CasesListScreen> {
               itemBuilder: (context, index) {
                 final caseItem = casesList[index];
 
+                // Safely extract pseudonym whether caseItem is a Map or an Object model
+                final pseudonym = caseItem.pseudonym.isNotEmpty
+                    ? caseItem.pseudonym
+                    : 'Protected Case';
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     leading: const CircleAvatar(
                       child: Icon(Icons.folder_open),
                     ),
-                    title: Text('Case #${index + 1}'),
-                    subtitle: Text(caseItem.toString()),
+                    // Displays the actual pseudonym (e.g. "Blue Sun") instead of "Case #1"
+                    title: Text(
+                      pseudonym,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    // Replaced raw caseItem.toString() with a privacy-compliant placeholder
+                    subtitle:
+                        const Text('Tap to authenticate and view details'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _authenticateAndOpenCase(caseItem),
+                    onTap: () => _openCaseDetails(caseItem),
                   ),
                 );
               },

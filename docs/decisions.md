@@ -7,7 +7,7 @@ These decisions close the open items in docs/architecture.md. They are binding f
 | D1 | Team | Backend split across two devs (A: foundation + registration; B: OTP + accounts + JWT). One web dev, one mobile dev. |
 | D2 | Hosting for integration/demo | One laptop runs `docker compose up` (Postgres 16 + Django via gunicorn). Others reach it at `http://<LAN-IP>:8000`; fallback `ngrok http 8000` for an HTTPS URL. |
 | D3 | OTP | Django generates a 6-digit code, stores only an HMAC hash, sends via a pluggable adapter. `OTP_PROVIDER=console` (default; code printed in backend logs; allowed only when `DJANGO_DEBUG=true`) or `OTP_PROVIDER=termii`. Termii's own token API is NOT used. |
-| D4 | OTP limits | 6 digits, 5-minute expiry, 5 wrong attempts per code, 60 s resend cooldown per number, max 5 requests per number per hour, new code invalidates older ones. |
+| D4 | OTP limits | 6 digits, 5-minute expiry, 10 wrong attempts per code, 60 s resend cooldown per number, max 10 requests per number per hour, new code invalidates older ones. |
 | D5 | Enumeration | OTP request always returns the same 200 body, registered or not. Web registration does reveal duplicates (409) — accepted for usability. |
 | D6 | Setup proof | After OTP verify, server returns an opaque one-time `setup_token` (43 chars, stored as SHA-256 hash, 10-minute expiry). Consumed on successful account creation only. |
 | D7 | Tokens | SimpleJWT. Access 15 min, refresh 7 days, rotation + blacklist. Logout blacklists the refresh token. `setup-account` and `login` both return tokens + user. |
@@ -17,7 +17,7 @@ These decisions close the open items in docs/architecture.md. They are binding f
 | D11 | Username | Lowercased, `^[a-z][a-z0-9_]{2,29}$`. Unique. |
 | D12 | Error format | Single envelope `{"error":{"code","message","fields"?}}` for all non-2xx. |
 | D13 | Placeholder home | Hard-coded synthetic rows in Flutter labelled "Sample". No backend endpoint. |
-| D14 | Account recovery | Out of scope. Known limitation: a student who forgets their password cannot recover the account in this milestone. |
+| D14 | Account recovery | Public, phone-based reset OTP; responses do not disclose whether the phone is registered. OTP is hashed, expires in 15 minutes, is single-use, and is limited to ten attempts. |
 | D15 | Mock modes | Web (`VITE_USE_MOCK=true`) and mobile (`--dart-define=USE_MOCK=true`) implement api-contract.md §4 exactly, so frontends never wait for the backend. |
 | D16 | Download link | Web confirmation page links to `VITE_APP_DOWNLOAD_URL` (a shared-drive link to the release APK for the demo). |
 | D17 | Cache | Django DatabaseCache (`createcachetable`) so throttles and cooldowns work across gunicorn workers. |
@@ -49,16 +49,16 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 JWT_ACCESS_MINUTES=15
 JWT_REFRESH_DAYS=7
-THROTTLE_REGISTRATION=60/hour
-THROTTLE_OTP_REQUEST=30/hour
-THROTTLE_OTP_VERIFY=60/hour
-THROTTLE_SETUP=30/hour
-THROTTLE_LOGIN=20/minute
+THROTTLE_REGISTRATION=10/minute
+THROTTLE_OTP_REQUEST=10/minute
+THROTTLE_OTP_VERIFY=10/minute
+THROTTLE_SETUP=10/minute
+THROTTLE_LOGIN=10/minute
 OTP_PROVIDER=console
 OTP_TTL_SECONDS=300
-OTP_MAX_ATTEMPTS=5
+OTP_MAX_ATTEMPTS=10
 OTP_RESEND_COOLDOWN_SECONDS=60
-OTP_MAX_REQUESTS_PER_PHONE_PER_HOUR=5
+OTP_MAX_REQUESTS_PER_PHONE_PER_HOUR=10
 SETUP_TOKEN_TTL_SECONDS=600
 TERMII_API_KEY=
 TERMII_SENDER_ID=
