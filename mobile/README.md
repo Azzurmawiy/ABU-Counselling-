@@ -66,6 +66,10 @@ With `OTP_PROVIDER=console`, OTP codes are written to backend logs as
 `[DEV OTP]`; this provider is for development only. Use the approved Termii
 provider for a real SMS integration.
 
+For the prototype counselling-case cryptography, verification coverage,
+payload contract, and APK/download implementation, see
+[`docs/prototype-case-crypto.md`](../docs/prototype-case-crypto.md).
+
 ## Build a release APK
 
 ```sh

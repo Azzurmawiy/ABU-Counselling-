@@ -10,7 +10,7 @@ abstract class TokenStorage {
 class SecureTokenStorage implements TokenStorage {
   SecureTokenStorage()
       : _storage = const FlutterSecureStorage(
-          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+          aOptions: AndroidOptions(),
         );
 
   final FlutterSecureStorage _storage;

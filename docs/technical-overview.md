@@ -59,6 +59,12 @@ list handler both allow opening details; the detail screen's “Biometric
 Verified” label is not an authoritative verification result. Treat this
 feature as demonstration UI only, not as secure handling of counselling data.
 
+The prototype now encrypts the identity payload and creates the document
+key-wrapping, student-shard, and committee-share structures described in
+[Prototype Case Cryptography and Release APK](prototype-case-crypto.md).
+Committee public keys are currently generated locally and discarded with their
+private keys; no production committee quorum recovery is implemented.
+
 ## Backend layout and data
 
 - `backend/config/settings.py`: Django, PostgreSQL, CORS, REST framework, JWT,

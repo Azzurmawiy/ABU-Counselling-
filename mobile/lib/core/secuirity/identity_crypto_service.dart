@@ -23,7 +23,15 @@ class IdentityCryptoService {
 
   /// Generates a fresh 256-bit K_master and encrypts the student's phone number
   /// via AES-256-GCM (Section 4.1 Step 1).
-  Future<EncryptedIdentityPayload> encryptPhoneNumber(String phoneNumber) async {
+  Future<EncryptedIdentityPayload> encryptPhoneNumber(
+      String phoneNumber) async {
+    return encryptIdentity(phoneNumber: phoneNumber);
+  }
+
+  Future<EncryptedIdentityPayload> encryptIdentity({
+    required String phoneNumber,
+    String? matricNumber,
+  }) async {
     // 1. Generate a fresh 32-byte K_master
     final secretKey = await _cipher.newSecretKey();
     final rawKeyBytes = Uint8List.fromList(await secretKey.extractBytes());
@@ -32,7 +40,13 @@ class IdentityCryptoService {
     final nonce = _cipher.newNonce();
 
     // 3. Encrypt the UTF-8 encoded phone number
-    final plaintextBytes = utf8.encode(phoneNumber.trim());
+    final plaintext = matricNumber == null
+        ? phoneNumber.trim()
+        : jsonEncode({
+            'phone_number': phoneNumber.trim(),
+            'matric_number': matricNumber.trim().toUpperCase(),
+          });
+    final plaintextBytes = utf8.encode(plaintext);
     final secretBox = await _cipher.encrypt(
       plaintextBytes,
       secretKey: secretKey,

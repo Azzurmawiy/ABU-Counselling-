@@ -35,7 +35,7 @@ export function RegisteredPage() {
           </div>
           <ol>
             <li>
-              <a className="button button-primary download-button" href="/download-app/">Download App (APK) <span aria-hidden="true">↗</span></a>
+              <a className="button button-primary download-button" href={config.appDownloadUrl || '/download-app/'}>Download App (APK) <span aria-hidden="true">↗</span></a>
             </li>
             <li><span>Open the app and tap “Set up my account”.</span></li>
             <li><span>Enter this phone number: <strong>{phone}</strong></span></li>

@@ -14,6 +14,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   final _formKey = GlobalKey<FormState>();
   String _selectedCategory = 'Academic Stress';
   final _phoneController = TextEditingController();
+  final _matricController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isSubmitting = false;
 
@@ -28,6 +29,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _matricController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -38,12 +40,67 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      await context.read<CaseController>().createCase(
-            phoneNumber: _phoneController.text.trim(),
-            category: _selectedCategory,
-            description: _descriptionController.text.trim(),
-          );
+      final summary =
+          await context.read<CaseController>().createCase(
+                phoneNumber: _phoneController.text.trim(),
+                matricNumber: _matricController.text.trim(),
+                category: _selectedCategory,
+                description: _descriptionController.text.trim(),
+              );
 
+      if (!mounted) return;
+      if (summary != null) {
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Prototype Crypto Summary'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Case ID: ${summary.caseId}'),
+                  Text('Case name: ${summary.caseName}'),
+                  Text(
+                    'Encrypted identity: ${summary.hasEncryptedIdentity ? 'present' : 'missing'}',
+                  ),
+                  Text(
+                    'wrapped_key_A: ${summary.hasWrappedKeyA ? 'present' : 'missing'}',
+                  ),
+                  Text(
+                    'shard_A: ${summary.hasShardA ? 'present' : 'missing'}',
+                  ),
+                  Text(
+                    'wrapped_key_B: ${summary.hasWrappedKeyB ? 'present' : 'missing'}',
+                  ),
+                  Text(
+                    'Committee shares: ${summary.committeeShareCount} encrypted',
+                  ),
+                  Text(
+                    'shard_B: ${summary.shardBStored ? 'stored in secure storage' : 'not stored'}',
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('snake_case payload structure:'),
+                  Text(summary.payloadStructure.toString()),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Prototype/local-only: no live case endpoint is called.',
+                  ),
+                  const Text(
+                    'Raw keys and ciphertext values are intentionally omitted.',
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop();
     } finally {
@@ -81,6 +138,27 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
                   }
                   if (val.trim().length < 10) {
                     return 'Please enter a valid phone number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _matricController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'Registration Matric Number (prototype)',
+                  hintText: 'e.g., U25CO0001',
+                  helperText:
+                      'Included in the locally encrypted prototype identity payload.',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your matric number';
+                  }
+                  if (value.trim().length < 3) {
+                    return 'Please enter a valid matric number';
                   }
                   return null;
                 },

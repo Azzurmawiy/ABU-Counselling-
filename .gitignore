@@ -27,3 +27,4 @@ mobile/ios/Pods/
 *.aab
 *.keystore
 *.jks
+mobile/android/key.properties
