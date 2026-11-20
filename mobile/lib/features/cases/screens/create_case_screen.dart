@@ -13,6 +13,7 @@ class CreateCaseScreen extends StatefulWidget {
 class _CreateCaseScreenState extends State<CreateCaseScreen> {
   final _formKey = GlobalKey<FormState>();
   String _selectedCategory = 'Academic Stress';
+  final _phoneController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isSubmitting = false;
 
@@ -26,6 +27,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
 
   @override
   void dispose() {
+    _phoneController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -35,13 +37,20 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
 
     setState(() => _isSubmitting = true);
 
-    await context.read<CaseController>().createCase(
-          category: _selectedCategory,
-          description: _descriptionController.text.trim(),
-        );
+    try {
+      await context.read<CaseController>().createCase(
+            phoneNumber: _phoneController.text.trim(),
+            category: _selectedCategory,
+            description: _descriptionController.text.trim(),
+          );
 
-    if (!mounted) return;
-    Navigator.of(context).pop();
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -56,6 +65,27 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Enrolled Phone Number',
+                  hintText: 'e.g., 08012345678',
+                  helperText:
+                      'Encrypted on-device; only revealed with your consent or emergency quorum.',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Please enter your enrolled phone number';
+                  }
+                  if (val.trim().length < 10) {
+                    return 'Please enter a valid phone number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory,
                 decoration: const InputDecoration(
@@ -75,7 +105,8 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
                 maxLines: 5,
                 decoration: const InputDecoration(
                   labelText: 'Describe your situation',
-                  hintText: 'Your identity remains completely anonymous...',
+                  hintText:
+                      'Names, room numbers, and contact details are automatically scrubbed on-device...',
                   border: OutlineInputBorder(),
                 ),
                 validator: (val) {
